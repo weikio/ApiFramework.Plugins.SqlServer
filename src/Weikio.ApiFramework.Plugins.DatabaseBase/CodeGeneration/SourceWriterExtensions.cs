@@ -3,18 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis.CSharp;
-using Weikio.ApiFramework.Plugins.SqlServer.Configuration;
-using Weikio.ApiFramework.Plugins.SqlServer.Schema;
 using Weikio.TypeGenerator.Types;
 
-namespace Weikio.ApiFramework.Plugins.SqlServer.CodeGeneration
+namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
 {
     public static class SourceWriterExtensions
     {
         public static void WriteNamespaceBlock(this StringBuilder writer, Table table,
             Action<StringBuilder> contentProvider)
         {
-            writer.Namespace(typeof(ApiFactory).Namespace + ".Generated" + table.Name);
+            writer.Namespace(typeof(DatabaseApiFactoryBase).Namespace + ".Generated" + table.Name);
 
             contentProvider.Invoke(writer);
 
@@ -23,7 +21,7 @@ namespace Weikio.ApiFramework.Plugins.SqlServer.CodeGeneration
 
         public static void WriteDataTypeClass(this StringBuilder writer, Table table)
         {
-            writer.WriteLine($"public class {GetDataTypeName(table)} : Weikio.ApiFramework.Plugins.SqlServer.CodeGeneration.DtoBase");
+            writer.WriteLine($"public class {GetDataTypeName(table)} : Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration.DtoBase");
             writer.StartBlock();
 
             foreach (var column in table.Columns)
@@ -43,7 +41,7 @@ namespace Weikio.ApiFramework.Plugins.SqlServer.CodeGeneration
             writer.FinishBlock(); // Finish the class
         }
 
-        public static void WriteApiClass(this StringBuilder writer, Table table, SqlServerOptions odbcOptions)
+        public static void WriteApiClass(this StringBuilder writer, Table table, DatabaseOptionsBase odbcOptions)
         {
             if (table.SqlCommand != null)
             {
@@ -86,10 +84,24 @@ namespace Weikio.ApiFramework.Plugins.SqlServer.CodeGeneration
             writer.WriteLine("protected override Dictionary<string, string> ColumnMap => _columnMap;");
             writer.WriteLine($"protected override bool IsSqlCommand => {(table.IsSqlCommand ? "true" : "false")};");
 
+            if (table.SqlCommand == null)
+            {
+                writer.WriteLine($"[ProducesResponseType(200, Type = typeof(List<{GetDataTypeName(table)}>))]");
+                writer.WriteLine(
+                    "public async IAsyncEnumerable<object> Select(string select, string filter, string orderby, int? top, int? skip, bool? count)");
+                writer.WriteLine("{");
+                writer.WriteLine("await foreach (var item in RunSelect(select, filter, orderby, top, skip, count))");
+                writer.WriteLine("{");
+                writer.WriteLine("yield return item;");
+                writer.WriteLine("}"); // Finish the await foreach
+
+                writer.WriteLine("}"); // Finish the Select method
+            }
+
             writer.WriteLine("}"); // Finish the class
         }
 
-        private static void WriteSqlCommandMethod(this StringBuilder writer, Table table, SqlServerOptions odbcOptions)
+        private static void WriteSqlCommandMethod(this StringBuilder writer, Table table, DatabaseOptionsBase databaseOptions)
         {
             var tableName = table.Name;
             var sqlCommand = table.SqlCommand;
@@ -131,7 +143,9 @@ namespace Weikio.ApiFramework.Plugins.SqlServer.CodeGeneration
 
             var dataTypeName = GetDataTypeName(table);
 
-            writer.Write($"BLOCK:public List<{dataTypeName}> {sqlMethod}({string.Join(", ", methodParameters)})");
+            writer.WriteLine($"[ProducesResponseType(200, Type = typeof(List<{GetDataTypeName(table)}>))]");
+            writer.WriteLine($"public async IAsyncEnumerable<object> {sqlMethod}({string.Join(", ", methodParameters)})");
+            writer.StartBlock();
 
             writer.WriteLine("");
 
@@ -143,9 +157,11 @@ namespace Weikio.ApiFramework.Plugins.SqlServer.CodeGeneration
                 }
             }
 
-            writer.WriteLine($"var result = RunSelect(null);");
+            writer.WriteLine("await foreach (var item in RunSelect(null, null, null, null, null, null))");
+            writer.WriteLine("{");
+            writer.WriteLine("yield return item;");
+            writer.WriteLine("}"); // Finish the Select method
 
-            writer.Write("return result;");
             writer.FinishBlock(); // Finish the method
         }
 

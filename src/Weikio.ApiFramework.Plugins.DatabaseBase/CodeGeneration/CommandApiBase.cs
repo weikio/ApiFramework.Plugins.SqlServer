@@ -1,7 +1,6 @@
 using System.Collections.Generic;
-using System.Linq;
 
-namespace Weikio.ApiFramework.Plugins.SqlServer.CodeGeneration
+namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
 {
     public abstract class CommandApiBase<T> : ApiBase<T> where T : DtoBase, new()
     {

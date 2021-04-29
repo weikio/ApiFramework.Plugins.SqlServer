@@ -1,7 +1,6 @@
-using System;
 using System.Collections.Generic;
 
-namespace Weikio.ApiFramework.Plugins.SqlServer.CodeGeneration
+namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
 {
     public class QueryData
     {

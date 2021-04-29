@@ -2,23 +2,22 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
-using Weikio.ApiFramework.Plugins.SqlServer.Configuration;
-using Weikio.ApiFramework.Plugins.SqlServer.Schema;
+using Microsoft.AspNetCore.Mvc;
 using Weikio.TypeGenerator;
 
-namespace Weikio.ApiFramework.Plugins.SqlServer.CodeGeneration
+namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
 {
     public class CodeGenerator
     {
         public static CodeToAssemblyGenerator CodeToAssemblyGenerator { get; set; }
 
-        public Assembly GenerateAssembly(IList<Table> schema, SqlServerOptions odbcOptions)
+        public Assembly GenerateAssembly(IList<Table> schema, DatabaseOptionsBase databaseOptions)
         {
             CodeToAssemblyGenerator = new CodeToAssemblyGenerator();
             CodeToAssemblyGenerator.ReferenceAssembly(typeof(System.Console).Assembly);
             CodeToAssemblyGenerator.ReferenceAssembly(typeof(System.Data.DataRow).Assembly);
-
-            var assemblyCode = GenerateCode(schema, odbcOptions);
+            CodeToAssemblyGenerator.ReferenceAssemblyContainingType<ProducesResponseTypeAttribute>();
+            var assemblyCode = GenerateCode(schema, databaseOptions);
 
             try
             {
@@ -35,13 +34,14 @@ namespace Weikio.ApiFramework.Plugins.SqlServer.CodeGeneration
             }
         }
 
-        public string GenerateCode(IList<Table> schema, SqlServerOptions odbcOptions)
+        public string GenerateCode(IList<Table> schema, DatabaseOptionsBase databaseOptions)
         {
             var source = new StringBuilder();
             source.UsingNamespace("System");
             source.UsingNamespace("System.Collections.Generic");
-            source.UsingNamespace("Weikio.ApiFramework.Plugins.SqlServer.Configuration");
-            source.UsingNamespace("Weikio.ApiFramework.Plugins.SqlServer.CodeGeneration");
+            source.UsingNamespace("Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration");
+            source.UsingNamespace("Microsoft.AspNetCore.Http");
+            source.UsingNamespace("Microsoft.AspNetCore.Mvc");
             source.WriteLine("");
 
             foreach (var table in schema)
@@ -50,7 +50,7 @@ namespace Weikio.ApiFramework.Plugins.SqlServer.CodeGeneration
                 {
                     namespaceBlock.WriteDataTypeClass(table);
 
-                    namespaceBlock.WriteApiClass(table, odbcOptions);
+                    namespaceBlock.WriteApiClass(table, databaseOptions);
                 });
             }
 

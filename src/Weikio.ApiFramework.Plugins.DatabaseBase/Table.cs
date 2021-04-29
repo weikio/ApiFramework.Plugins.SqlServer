@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
-using Weikio.ApiFramework.Plugins.SqlServer.Configuration;
 
-namespace Weikio.ApiFramework.Plugins.SqlServer.Schema
+namespace Weikio.ApiFramework.Plugins.DatabaseBase
 {
     public class Table
     {
