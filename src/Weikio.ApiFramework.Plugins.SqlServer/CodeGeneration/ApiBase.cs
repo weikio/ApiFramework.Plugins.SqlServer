@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Reflection;
 using Weikio.ApiFramework.Plugins.SqlServer.Configuration;
+using Weikio.TypeGenerator.Types;
 
 namespace Weikio.ApiFramework.Plugins.SqlServer.CodeGeneration
 {
@@ -16,7 +18,7 @@ namespace Weikio.ApiFramework.Plugins.SqlServer.CodeGeneration
         
         public SqlServerOptions Configuration { get; set; }
 
-        protected async IAsyncEnumerable<T> RunSelect(int? top)
+        protected async IAsyncEnumerable<T> RunSelect(string select, string filter, string orderby, int? top, int? skip, bool? count)
         {
             var fields = new List<string>();
 
@@ -25,44 +27,73 @@ namespace Weikio.ApiFramework.Plugins.SqlServer.CodeGeneration
                 await conn.OpenAsync();
                 using (var cmd = conn.CreateCommand())
                 {
-                    var queryAndParameters = CreateQuery(TableName, top, fields);
+                    var queryAndParameters = CreateQuery(TableName, select, filter, orderby, top, skip, count, fields);
 
                     cmd.CommandText = queryAndParameters.Query;
+                    
                     foreach (var prm in queryAndParameters.Parameters)
                     {
-                        if (prm.Item2 == null)
+                        if (prm.Value == null)
                         {
-                            cmd.Parameters.AddWithValue(prm.Item1, DBNull.Value);
+                            cmd.Parameters.AddWithValue(prm.Key, DBNull.Value);
                         }
                         else
                         {
-                            cmd.Parameters.AddWithValue(prm.Item1, prm.Item2);
+                            cmd.Parameters.AddWithValue(prm.Key, prm.Value);
                         }                        
                     }
 
+                    var selectedColumns = ColumnMap;
+                    Type generatedType = null;
+                    if (fields?.Any() == true)
+                    {
+                        selectedColumns = ColumnMap.Where(x => fields.Contains(x.Key, StringComparer.OrdinalIgnoreCase)).ToDictionary(p => p.Key, p => p.Value);
+
+                        var wrapperOptions = new TypeToTypeWrapperOptions
+                        {
+                            IncludedProperties = new List<string>(selectedColumns.Select(x => x.Value)),
+                            AssemblyGenerator = CodeGenerator.CodeToAssemblyGenerator
+                        };
+
+                        generatedType = new TypeToTypeWrapper().CreateType(typeof(T), wrapperOptions);
+                    }
+                    
                     using (var reader = await cmd.ExecuteReaderAsync())
                     {
                         while (await reader.ReadAsync())
                         {
-                            var item = new T();
-                            var selectedColumns = ColumnMap;
-                            if (fields?.Any() == true)
+                            if (generatedType != null)
                             {
-                                selectedColumns = ColumnMap.Where(x => fields.Contains(x.Key, StringComparer.OrdinalIgnoreCase)).ToDictionary(p => p.Key, p => p.Value);
-                            }
+                                dynamic item = Activator.CreateInstance(generatedType);
 
-                            foreach (var column in selectedColumns)
+                                foreach (var column in selectedColumns)
+                                {
+                                    var dbColumnValue = reader[column.Key] == DBNull.Value ? null : reader[column.Key];
+
+                                    generatedType.InvokeMember(column.Value,
+                                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty,
+                                        Type.DefaultBinder, item, new[] { dbColumnValue });
+                                }
+
+                                yield return item;
+                            }
+                            else
                             {
-                                item[column.Value] = reader[column.Key] == DBNull.Value ? null : reader[column.Key];
-                            }
+                                var item = new T();
 
-                            yield return item;
+                                foreach (var column in selectedColumns)
+                                {
+                                    item[column.Value] = reader[column.Key] == DBNull.Value ? null : reader[column.Key];
+                                }
+
+                                yield return item;
+                            }
                         }
                     }
                 }
             }
         }
 
-        protected abstract QueryData CreateQuery(string tableName, int? top, List<string> fields);
+        protected abstract QueryData CreateQuery(string tableName, string select, string filter, string orderby, int? top, int? skip, bool? count, List<string> fields);
     }
 }

@@ -28,7 +28,7 @@ namespace Weikio.ApiFramework.Plugins.SqlServer.Sample
                     new SqlServerOptions()
                     {
                         ConnectionString =
-                            "Server=tcp:db.database.windows.net,1433;User ID=docs;Password=;Integrated Security=false;Initial Catalog=db;",
+                            "Server=tcp:adafydevtestdb001.database.windows.net,1433;User ID=docs;Password=3h1@*6PXrldU4F95;Integrated Security=false;Initial Catalog=adafyweikiodevtestdb001;",
                     });
         }
 

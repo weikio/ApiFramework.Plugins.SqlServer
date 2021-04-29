@@ -10,18 +10,20 @@ namespace Weikio.ApiFramework.Plugins.SqlServer.CodeGeneration
 {
     public class CodeGenerator
     {
+        public static CodeToAssemblyGenerator CodeToAssemblyGenerator { get; set; }
+
         public Assembly GenerateAssembly(IList<Table> schema, SqlServerOptions odbcOptions)
         {
-            var generator = new CodeToAssemblyGenerator();
-            generator.ReferenceAssembly(typeof(System.Console).Assembly);
-            generator.ReferenceAssembly(typeof(System.Data.DataRow).Assembly);
+            CodeToAssemblyGenerator = new CodeToAssemblyGenerator();
+            CodeToAssemblyGenerator.ReferenceAssembly(typeof(System.Console).Assembly);
+            CodeToAssemblyGenerator.ReferenceAssembly(typeof(System.Data.DataRow).Assembly);
 
             var assemblyCode = GenerateCode(schema, odbcOptions);
 
             try
             {
-                generator.ReferenceAssembly(GetType().Assembly);
-                var result = generator.GenerateAssembly(assemblyCode);
+                CodeToAssemblyGenerator.ReferenceAssembly(GetType().Assembly);
+                var result = CodeToAssemblyGenerator.GenerateAssembly(assemblyCode);
 
                 return result;
             }

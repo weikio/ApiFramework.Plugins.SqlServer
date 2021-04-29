@@ -5,10 +5,18 @@ namespace Weikio.ApiFramework.Plugins.SqlServer.CodeGeneration
 {
     public abstract class CommandApiBase<T> : ApiBase<T> where T : DtoBase, new()
     {
-        protected override QueryData CreateQuery(string tableName, int? top, List<string> fields)
+        protected override QueryData CreateQuery(string tableName, string select, string filter, string orderby, int? top, int? skip, bool? count, List<string> fields)
         {
-            var query = CommandText.Replace("\"", "\"\"");            
-            return new QueryData { Query = query, Parameters = CommandParameters.ToList() };
+            var query = CommandText.Replace("\"", "\"\"");
+
+            var cmdParameters = new Dictionary<string, object>();
+
+            foreach (var commandParameter in CommandParameters)
+            {
+                cmdParameters.Add(commandParameter.Item1, commandParameter.Item2);
+            }
+
+            return new QueryData { Query = query, Parameters = cmdParameters };
         }
     }
 }
