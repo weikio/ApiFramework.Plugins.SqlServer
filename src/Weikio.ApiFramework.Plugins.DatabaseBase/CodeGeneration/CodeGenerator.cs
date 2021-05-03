@@ -28,7 +28,7 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
             CodeToAssemblyGenerator.ReferenceAssembly(typeof(System.Data.DataRow).Assembly);
             CodeToAssemblyGenerator.ReferenceAssemblyContainingType<ProducesResponseTypeAttribute>();
             CodeToAssemblyGenerator.ReferenceAssembly(_connectionCreator.GetType().Assembly);
-            
+
             var assemblyCode = GenerateCode(tableSchema, nonQueryCommands, databaseOptions);
 
             try
@@ -53,7 +53,7 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
             source.UsingNamespace("System.Collections.Generic");
             source.UsingNamespace("System.Reflection");
             source.UsingNamespace("System.Linq");
-            source.UsingNamespace("System.Diagnostics");       
+            source.UsingNamespace("System.Diagnostics");
             source.UsingNamespace("System.Data");
             source.UsingNamespace("Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration");
             source.UsingNamespace("Microsoft.AspNetCore.Http");
@@ -70,12 +70,12 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
                     namespaceBlock.WriteApiClass(table, databaseOptions, _connectionCreator);
                 });
             }
-            
+
             foreach (var command in nonQueryCommands)
             {
                 source.WriteNamespaceBlock(command, namespaceBlock =>
                 {
-                    namespaceBlock.WriteNonQueryCommandApiClass(command, odbcOptions);
+                    namespaceBlock.WriteNonQueryCommandApiClass(command);
                 });
             }
 

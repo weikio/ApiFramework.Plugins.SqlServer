@@ -47,7 +47,8 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase
             {
                 if (_options.ShouldGenerateApisForTables())
                 {
-                    HandleTables();
+                    var dbTables = HandleTables();
+                    tables.AddRange(dbTables);
                 }
                 else
                 {
@@ -76,7 +77,7 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase
             return (tables, commands);
         }
 
-        public void HandleTables()
+        public List<Table> HandleTables()
         {
             _logger.LogInformation("Handling tables");
 
@@ -84,7 +85,7 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase
 
             var tables = GetTables();
             _logger.LogDebug("Found {TableCount} tables in total", tables.Count);
-            var filteredTables = new List<Table>();
+            var result = new List<Table>();
 
             foreach (var table in tables)
             {
@@ -93,16 +94,18 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase
                     continue;
                 }
 
-                filteredTables.Add(table);
+                result.Add(table);
             }
 
-            _logger.LogDebug("After filtering handling {TableCount} tables", filteredTables.Count);
+            _logger.LogDebug("After filtering handling {TableCount} tables", result.Count);
 
-            foreach (var table in filteredTables)
+            foreach (var table in result)
             {
-                var columns = GetColumnForTable(table);
+                var columns = GetColumnsForTable(table);
                 table.Columns = columns;
             }
+
+            return result;
         }
 
         public (IList<Table> QueryCommands, SqlCommands NonQueryCommands) HandleCommands(SqlCommands sqlCommands)
@@ -131,7 +134,7 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase
                 using (var cmd = _connection.CreateCommand())
                 {
                     var table = ConvertQueryToTable(cmd, sqlCommand);
-                    var columns = GetColumnForTable(table);
+                    var columns = GetColumnsForCommand(cmd);
                     table.Columns = columns;
 
                     queryCommands.Add(table);
@@ -163,26 +166,35 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase
             return result;
         }
 
-        public virtual IList<Column> GetColumnForTable(Table table)
+        public virtual IList<Column> GetColumnsForTable(Table table)
         {
             _logger.LogDebug("Gettings columns for table {Table}", table.Name);
 
             using (var command = _connection.CreateCommand())
             {
-                var query = _sqlColumnSelectFactory.Invoke(table.NameWithQualifier);
+                string query;
+
+                if (table.IsSqlCommand)
+                {
+                    query = table.SqlCommand.CommandText;
+                }
+                else
+                {
+                    query = _sqlColumnSelectFactory.Invoke(table.NameWithQualifier);
+                }
 
                 command.CommandText = query;
                 command.CommandTimeout = (int) TimeSpan.FromMinutes(5).TotalSeconds;
 
-                var columns = GetColumnsFromCommand(command);
+                var columns = GetColumnsForCommand(command);
 
                 return columns;
             }
         }
-
+        
         protected virtual (string Name, string Schema) GetTableNameAndSchemaFromSchemaRow(DataRow row)
         {
-            if (row["TABLE_TYPE"].ToString() != "TABLE")
+            if (row["TABLE_TYPE"].ToString() != "TABLE" && row["TABLE_TYPE"].ToString() != "BASE TABLE")
             {
                 return default;
             }
@@ -196,6 +208,10 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase
             else if (row.Table.Columns.Contains("TABLE_SCHEM"))
             {
                 tableQualifier = row["TABLE_SCHEM"].ToString();
+            }
+            else if (row.Table.Columns.Contains("TABLE_SCHEMA"))
+            {
+                tableQualifier = row["TABLE_SCHEMA"].ToString();
             }
 
             var tableName = row["TABLE_NAME"].ToString();
@@ -220,7 +236,7 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase
             // don't read schema for INSERT and UPDATE commands
         }
 
-        protected virtual IList<Column> GetColumnsFromCommand(DbCommand dbCommand)
+        protected virtual IList<Column> GetColumnsForCommand(DbCommand dbCommand)
         {
             var columns = new List<Column>();
 
@@ -292,7 +308,7 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase
 
             return table;
         }
-
+        
         #region IDisposable Support
 
         private bool disposedValue; // To detect redundant calls

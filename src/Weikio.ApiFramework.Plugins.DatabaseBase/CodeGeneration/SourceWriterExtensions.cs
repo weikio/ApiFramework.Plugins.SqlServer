@@ -18,6 +18,16 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
 
             writer.FinishBlock(); // Finish the namespace
         }
+        
+        public static void WriteNamespaceBlock(this StringBuilder writer, KeyValuePair<string, SqlCommand> command,
+            Action<StringBuilder> contentProvider)
+        {
+            writer.Namespace(typeof(DatabaseApiFactoryBase).Namespace + ".Generated" + command.Key);
+
+            contentProvider.Invoke(writer);
+
+            writer.FinishBlock(); // Finish the namespace
+        }
 
         public static void WriteDataTypeClass(this StringBuilder writer, Table table)
         {
@@ -40,22 +50,11 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
 
             writer.FinishBlock(); // Finish the class
         }
-        
-        public static void WriteNonQueryCommandApiClass(this StringBuilder writer, KeyValuePair<string, SqlCommand> command, DatabaseOptionsBase options)
-        {
-            writer.StartClass(GetApiClassName(command));
-
-            writer.WriteLine("public DatabaseOptionsBase Configuration { get; set; }");
-
-            writer.WriteCommandMethod(command.Key, command.Value, options);
-
-            writer.FinishBlock(); // Finish the class
-        }
 
         public static void WriteApiClass(this StringBuilder writer, Table table, DatabaseOptionsBase options, IConnectionCreator connectionCreator)
         {
             Cache.ConnectionCreator = connectionCreator;
-
+            
             if (table.SqlCommand != null)
             {
                 writer.WriteLine($"public class {GetApiClassName(table)} : CommandApiBase<{GetDataTypeName(table)}>");
@@ -66,19 +65,13 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
                 writer.WriteLine("CommandParameters = new List<Tuple<string, object>>();");
                 writer.WriteLine("}");
 
-                writer.WriteCommandMethod(table, options);
+                writer.WriteSqlCommandMethod(table.Name, table.SqlCommand);
             }
             else
             {
                 writer.WriteLine($"public class {GetApiClassName(table)} : TableApiBase<{GetDataTypeName(table)}>");
                 writer.WriteLine("{");
             }
-            
-            writer.WriteLine($"private readonly ILogger<{GetApiClassName(table)}> _logger;");
-            writer.WriteLine($"public {GetApiClassName(table)} (ILogger<{GetApiClassName(table)}> logger)");
-            writer.WriteLine("{");
-            writer.WriteLine("_logger = logger;");
-            writer.WriteLine("}");
 
             var columnMap = new Dictionary<string, string>();
 
@@ -106,7 +99,6 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
             if (table.SqlCommand == null)
             {
                 writer.WriteLine($"[ProducesResponseType(200, Type = typeof(List<{GetDataTypeName(table)}>))]");
-
                 writer.WriteLine(
                     "public async IAsyncEnumerable<object> Select(string select, string filter, string orderby, int? top, int? skip, bool? count)");
                 writer.WriteLine("{");
@@ -121,7 +113,37 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
             writer.WriteLine("}"); // Finish the class
         }
 
-        private static void WriteCommandMethod(this StringBuilder writer, string commandName, SqlCommand sqlCommand, DatabaseOptionsBase databaseOptions)
+        public static void WriteNonQueryCommandApiClass(this StringBuilder writer, KeyValuePair<string, SqlCommand> command)
+        {
+            writer.WriteLine($"public class {GetApiClassName(command)} : CommandApiBase<{GetDataTypeName(command.Key, command.Value)}>");
+            writer.WriteLine("{");
+
+            writer.WriteLine($"public {GetApiClassName(command)}() {{");
+            writer.WriteLine($"CommandText = \"{command.Value.CommandText}\";");
+            writer.WriteLine("CommandParameters = new List<Tuple<string, object>>();");
+            writer.WriteLine("}");
+
+            writer.WriteSqlCommandMethod(command.Key, command.Value);
+
+            writer.FinishBlock(); // Finish the class
+        }
+        
+        private static string GetApiClassName(KeyValuePair<string, SqlCommand> command)
+        {
+            return $"{command.Key}Api";
+        }
+        
+        private static string GetDataTypeName(string commandName, SqlCommand sqlCommand = null)
+        {
+            if (!string.IsNullOrEmpty(sqlCommand?.DataTypeName))
+            {
+                return sqlCommand.DataTypeName;
+            }
+
+            return commandName + "Item";
+        }
+        
+        private static void WriteSqlCommandMethod(this StringBuilder writer, string tableName, SqlCommand sqlCommand)
         {
             var sqlMethod = sqlCommand.CommandText.Trim()
                 .Split(new[] { ' ' }, 2)
@@ -158,134 +180,28 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
                 }
             }
 
-            var dataTypeName = sqlCommand.IsNonQuery() ? "int" : GetDataTypeName(commandName, sqlCommand);
-            var returnType = sqlCommand.IsNonQuery() ? "int" : $"IAsyncEnumerable<{dataTypeName}>";
+            var dataTypeName = GetDataTypeName(tableName, sqlCommand);
 
-            var cmdMethods = $"public async Task<{returnType}> {sqlMethod}({string.Join(", ", methodParameters)})";
-
-            if (sqlCommand.IsQuery())
-            {
-                cmdMethods = $"public async {returnType} {sqlMethod}({string.Join(", ", methodParameters)})";
-            }
-
-            writer.WriteLine(cmdMethods);
-            writer.WriteLine("{");
-
-            if (sqlCommand.IsQuery() == false)
-            {
-                writer.WriteLine($"{returnType} result;");
-            }
+            writer.WriteLine($"[ProducesResponseType(200, Type = typeof(List<{dataTypeName}>))]");
+            writer.WriteLine($"public async IAsyncEnumerable<object> {sqlMethod}({string.Join(", ", methodParameters)})");
+            writer.StartBlock();
 
             writer.WriteLine("");
 
-            writer.UsingBlock($"var conn = new OdbcConnection(\"{databaseOptions.ConnectionString}\")", w =>
+            if (sqlCommand.Parameters?.Any() == true)
             {
-                w.WriteLine("await conn.OpenAsync();");
-
-                w.UsingBlock("var cmd = conn.CreateCommand()", cmdBlock =>
+                foreach (var sqlCommandParameter in sqlCommand.Parameters)
                 {
-                    cmdBlock.WriteLine($"cmd.CommandText = @\"{sqlCommand.GetEscapedCommandText()}\";");
-
-                    if (sqlCommand.Parameters != null)
-                    {
-                        foreach (var sqlCommandParameter in sqlCommand.Parameters)
-                        {
-                            cmdBlock.WriteLine(@$"OdbcHelpers.AddParameter(cmd, ""{sqlCommandParameter.Name}"", {sqlCommandParameter.Name});");
-                        }
-                    }
-
-                    if (sqlCommand.IsQuery())
-                    {
-                        cmdBlock.UsingBlock("var reader = await cmd.ExecuteReaderAsync()", readerBlock =>
-                        {
-                            readerBlock.WriteLine("while (await reader.ReadAsync())");
-                            readerBlock.WriteLine("{");
-                            readerBlock.WriteLine($"var item = new {dataTypeName}();");
-                            readerBlock.WriteLine("{");
-                            readerBlock.Write("foreach (var column in ColumnMap)");
-
-                            readerBlock.Write(
-                                "item[column.Value] = reader[column.Key] == DBNull.Value ? null : reader[column.Key];");
-                            readerBlock.FinishBlock(); // Finish the column setting foreach loop
-
-                            readerBlock.Write("yield return item;");
-                            readerBlock.FinishBlock(); // Finish the while loop
-                        });
-                    }
-                    else
-                    {
-                        cmdBlock.WriteLine("result = cmd.ExecuteNonQuery();");
-                    }
-                });
-            });
-
-            if (sqlCommand.IsQuery() == false)
-            {
-                writer.Write("return result;");
+                    writer.WriteLine($"CommandParameters.Add(new Tuple<string, object>(\"{sqlCommandParameter.Name}\", {sqlCommandParameter.Name}));");
+                }
             }
 
-            writer.FinishBlock(); // Finish the method
+            writer.WriteLine("await foreach (var item in RunSelect(null, null, null, null, null, null))");
+            writer.WriteLine("{");
+            writer.WriteLine("yield return item;");
+            writer.WriteLine("}"); // Finish the Select method
 
-            // var tableName = table.Name;
-            // var sqlCommand = table.SqlCommand;
-            //
-            // var sqlMethod = sqlCommand.CommandText.Trim()
-            //     .Split(new[] { ' ' }, 2)
-            //     .First().ToLower();
-            // sqlMethod = sqlMethod.Substring(0, 1).ToUpper() + sqlMethod.Substring(1);
-            //
-            // var methodParameters = new List<string>();
-            //
-            // if (sqlCommand.Parameters != null)
-            // {
-            //     foreach (var sqlCommandParameter in sqlCommand.Parameters)
-            //     {
-            //         var methodParam = "";
-            //
-            //         if (sqlCommandParameter.Optional)
-            //         {
-            //             var paramType = Type.GetType(sqlCommandParameter.Type);
-            //
-            //             if (paramType.IsValueType)
-            //             {
-            //                 methodParam += $"{sqlCommandParameter.Type}? {sqlCommandParameter.Name} = null";
-            //             }
-            //             else
-            //             {
-            //                 methodParam += $"{sqlCommandParameter.Type} {sqlCommandParameter.Name} = null";
-            //             }
-            //         }
-            //         else
-            //         {
-            //             methodParam += $"{sqlCommandParameter.Type} {sqlCommandParameter.Name}";
-            //         }
-            //
-            //         methodParameters.Add(methodParam);
-            //     }
-            // }
-            //
-            // var dataTypeName = GetDataTypeName(table);
-            //
-            // writer.WriteLine($"[ProducesResponseType(200, Type = typeof(List<{GetDataTypeName(table)}>))]");
-            // writer.WriteLine($"public async IAsyncEnumerable<object> {sqlMethod}({string.Join(", ", methodParameters)})");
-            // writer.StartBlock();
-            //
-            // writer.WriteLine("");
-            //
-            // if (sqlCommand.Parameters?.Any() == true)
-            // {
-            //     foreach (var sqlCommandParameter in sqlCommand.Parameters)
-            //     {
-            //         writer.WriteLine($"CommandParameters.Add(new Tuple<string, object>(\"{sqlCommandParameter.Name}\", {sqlCommandParameter.Name}));");
-            //     }
-            // }
-            //
-            // writer.WriteLine("await foreach (var item in RunSelect(null, null, null, null, null, null))");
-            // writer.WriteLine("{");
-            // writer.WriteLine("yield return item;");
-            // writer.WriteLine("}"); // Finish the Select method
-            //
-            // writer.FinishBlock(); // Finish the method
+            writer.FinishBlock(); // Finish the method
         }
 
         private static string GetApiClassName(Table table)
@@ -293,11 +209,6 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
             return $"{table.Name}Api";
         }
 
-        private static string GetApiClassName(KeyValuePair<string, SqlCommand> command)
-        {
-            return $"{command.Key}Api";
-        }
-        
         private static string GetDataTypeName(Table table)
         {
             if (!string.IsNullOrEmpty(table.SqlCommand?.DataTypeName))
@@ -307,17 +218,6 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
 
             return table.Name + "Item";
         }
-        
-        private static string GetDataTypeName(string commandName, SqlCommand sqlCommand = null)
-        {
-            if (!string.IsNullOrEmpty(sqlCommand?.DataTypeName))
-            {
-                return sqlCommand.DataTypeName;
-            }
-
-            return commandName + "Item";
-        }
-
 
         private static string GetPropertyName(string originalName)
         {

@@ -8,7 +8,8 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
 {
     public abstract class TableApiBase<T> : ApiBase<T> where T : DtoBase, new()
     {
-        private static ODataToSqlConverter _converter = new ODataToSqlConverter(new EdmModelBuilder(), new SqlServerCompiler() { UseLegacyPagination = false });
+        private static ODataToSqlConverter _converter = new ODataToSqlConverter(new EdmModelBuilder(), 
+            new SqlServerCompiler() { UseLegacyPagination = false });
 
         protected override QueryData CreateQuery(string tableName, string select, string filter, string orderby, int? top, int? skip, bool? count, List<string> fields)
         {
