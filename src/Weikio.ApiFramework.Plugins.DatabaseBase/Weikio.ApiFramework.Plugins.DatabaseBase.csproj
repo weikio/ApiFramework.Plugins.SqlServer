@@ -2,6 +2,23 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>Weik.io</Authors>
+    <Company>Weik.io</Company>
+    <Description>Database base project for DB plugins for API Framework.</Description>
+    <PackageDescription>Database base project for DB plugins for API Framework.</PackageDescription>
+    <PackageProjectUrl>https://weik.io</PackageProjectUrl>
+    <Copyright>©2021 Weik.io</Copyright>
+    <PackageId>Weikio.ApiFramework.Plugins.DatabaseBase</PackageId>
+    <Product>Weikio.ApiFramework.Plugins.DatabaseBase</Product>
+    <AssemblyName>Weikio.ApiFramework.Plugins.DatabaseBase</AssemblyName>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/weikio/ApiFramework.Plugins.DatabaseBase</RepositoryUrl>
+    <PackageTags>apiframework;plugin;SQLServer</PackageTags>
+    <PackageIcon>logo_256.png</PackageIcon>
+    <Title>Database base project for DB plugins for API Framework.</Title>
+    <MinVerMinimumMajorMinor>1.0</MinVerMinimumMajorMinor>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,6 +30,10 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../docs/logo_256.png" Pack="true" Visible="false" PackagePath="" />
   </ItemGroup>
 
 </Project>

@@ -3,12 +3,20 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Microsoft.Extensions.Logging;
 using Weikio.TypeGenerator.Types;
 
 namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
 {
     public abstract class ApiBase<T> where T : DtoBase, new()
     {
+        protected ILogger<ApiBase<T>> Logger { get; }
+
+        protected ApiBase(ILogger<ApiBase<T>> logger)
+        {
+            Logger = logger;
+        }
+
         private readonly IConnectionCreator _connectionCreator = Cache.ConnectionCreator;
         protected abstract string TableName { get; }
         protected abstract Dictionary<string, string> ColumnMap { get; }

@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using SqlKata.Compilers;
 using Weikio.TypeGenerator;
 
 namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
@@ -11,11 +12,13 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
     public class CodeGenerator
     {
         private readonly IConnectionCreator _connectionCreator;
+        private readonly Compiler _compiler;
         private readonly ILogger<CodeGenerator> _logger;
 
-        public CodeGenerator(IConnectionCreator connectionCreator, ILogger<CodeGenerator> logger)
+        public CodeGenerator(IConnectionCreator connectionCreator, Compiler compiler, ILogger<CodeGenerator> logger)
         {
             _connectionCreator = connectionCreator;
+            _compiler = compiler;
             _logger = logger;
         }
 
@@ -34,6 +37,8 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
             try
             {
                 CodeToAssemblyGenerator.ReferenceAssembly(GetType().Assembly);
+
+                _logger.LogInformation("Generating assembly from code");
                 var result = CodeToAssemblyGenerator.GenerateAssembly(assemblyCode);
 
                 return result;
@@ -61,13 +66,16 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
             source.UsingNamespace("Microsoft.Extensions.Logging");
             source.WriteLine("");
 
+            _logger.LogInformation("Generating code for tables and commands");
+
             foreach (var table in tableSchema)
             {
                 source.WriteNamespaceBlock(table, namespaceBlock =>
                 {
+                    _logger.LogDebug("Generating code for table {Table}", table.Name);
                     namespaceBlock.WriteDataTypeClass(table);
 
-                    namespaceBlock.WriteApiClass(table, databaseOptions, _connectionCreator);
+                    namespaceBlock.WriteApiClass(table, databaseOptions, _connectionCreator, _compiler);
                 });
             }
 
@@ -75,9 +83,13 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
             {
                 source.WriteNamespaceBlock(command, namespaceBlock =>
                 {
+                    _logger.LogDebug("Generating code for non query command {NonQueryCommand}", command.Key);
+                    
                     namespaceBlock.WriteNonQueryCommandApiClass(command);
                 });
             }
+
+            _logger.LogInformation("Code generated for tables and commands");
 
             return source.ToString();
         }

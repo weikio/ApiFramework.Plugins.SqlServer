@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
 
 namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
 {
@@ -16,6 +17,10 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
             }
 
             return new QueryData { Query = query, Parameters = cmdParameters };
+        }
+
+        protected CommandApiBase(ILogger<ApiBase<T>> logger) : base(logger)
+        {
         }
     }
 }

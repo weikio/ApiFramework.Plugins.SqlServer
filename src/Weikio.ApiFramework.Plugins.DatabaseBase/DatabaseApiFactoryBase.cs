@@ -30,12 +30,14 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase
                 re.Connect();
                 var schema = re.GetSchema();
                 
-                var generator = new CodeGenerator(connectionCreatorFactory.Invoke(configuration), _loggerFactory.CreateLogger<CodeGenerator>());
+                var generator = new CodeGenerator(connectionCreatorFactory.Invoke(configuration), compiler, _loggerFactory.CreateLogger<CodeGenerator>());
                 var assembly = generator.GenerateAssembly(schema.Tables, schema.Commands, configuration);
 
                 var result = assembly.GetExportedTypes()
                     .Where(x => x.Name.EndsWith("Api"))
                     .ToList();
+                
+                _logger.LogDebug("Generated {ApiCount} APIs", result.Count);
 
                 return result;
             }

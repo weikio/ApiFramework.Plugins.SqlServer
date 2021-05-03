@@ -49,6 +49,8 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase
                 {
                     var dbTables = HandleTables();
                     tables.AddRange(dbTables);
+                    
+                    _logger.LogInformation("Found {DatabaseTablesCount} tables", dbTables.Count);
                 }
                 else
                 {
@@ -58,6 +60,9 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase
                 if (_options.SqlCommands?.Any() == true)
                 {
                     var (queryCommands,  sqlCommands) = HandleCommands(_options.SqlCommands);
+
+                    _logger.LogInformation("Found {QueryCommandCount} query commands and {CommandCount} non query commands", queryCommands.Count,
+                        sqlCommands.Count);
 
                     tables.AddRange(queryCommands);
                     commands = sqlCommands;
@@ -73,6 +78,8 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase
 
                 throw;
             }
+            
+            _logger.LogInformation("Found schema with {TableCount} tables and {CommandCount} commands", tables.Count, commands?.Count ?? 0);
 
             return (tables, commands);
         }
