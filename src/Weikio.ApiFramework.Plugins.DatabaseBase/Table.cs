@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 
 namespace Weikio.ApiFramework.Plugins.DatabaseBase
 {
@@ -11,19 +12,18 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase
 
         public string NameWithQualifier { get; }
 
-        public IList<Column> Columns { get; }
+        public IList<Column> Columns { get; set; }
 
         public SqlCommand SqlCommand { get; set; }
 
         public bool IsSqlCommand => SqlCommand != null;
 
-        public Table(string name, string qualifier, IList<Column> columns, SqlCommand sqlCommand = null)
+        public Table(string name, string qualifier)
         {
             Name = name;
             Qualifier = qualifier;
             NameWithQualifier = string.IsNullOrWhiteSpace(qualifier) ? name : $"{qualifier}.{name}";
-            Columns = columns ?? new List<Column>();
-            SqlCommand = sqlCommand;
+            Columns = new List<Column>();
         }
 
         public void AddColumn(string columnName, Type dataType, bool isNullable) 

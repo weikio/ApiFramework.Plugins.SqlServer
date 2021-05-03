@@ -21,14 +21,15 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
 
         public static CodeToAssemblyGenerator CodeToAssemblyGenerator { get; set; }
 
-        public Assembly GenerateAssembly(IList<Table> schema, DatabaseOptionsBase databaseOptions)
+        public Assembly GenerateAssembly(IList<Table> tableSchema, SqlCommands nonQueryCommands, DatabaseOptionsBase databaseOptions)
         {
             CodeToAssemblyGenerator = new CodeToAssemblyGenerator();
             CodeToAssemblyGenerator.ReferenceAssembly(typeof(Console).Assembly);
             CodeToAssemblyGenerator.ReferenceAssembly(typeof(System.Data.DataRow).Assembly);
             CodeToAssemblyGenerator.ReferenceAssemblyContainingType<ProducesResponseTypeAttribute>();
             CodeToAssemblyGenerator.ReferenceAssembly(_connectionCreator.GetType().Assembly);
-            var assemblyCode = GenerateCode(schema, databaseOptions);
+            
+            var assemblyCode = GenerateCode(tableSchema, nonQueryCommands, databaseOptions);
 
             try
             {
@@ -45,23 +46,36 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
             }
         }
 
-        public string GenerateCode(IList<Table> schema, DatabaseOptionsBase databaseOptions)
+        public string GenerateCode(IList<Table> tableSchema, SqlCommands nonQueryCommands, DatabaseOptionsBase databaseOptions)
         {
             var source = new StringBuilder();
             source.UsingNamespace("System");
             source.UsingNamespace("System.Collections.Generic");
+            source.UsingNamespace("System.Reflection");
+            source.UsingNamespace("System.Linq");
+            source.UsingNamespace("System.Diagnostics");       
+            source.UsingNamespace("System.Data");
             source.UsingNamespace("Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration");
             source.UsingNamespace("Microsoft.AspNetCore.Http");
             source.UsingNamespace("Microsoft.AspNetCore.Mvc");
+            source.UsingNamespace("Microsoft.Extensions.Logging");
             source.WriteLine("");
 
-            foreach (var table in schema)
+            foreach (var table in tableSchema)
             {
                 source.WriteNamespaceBlock(table, namespaceBlock =>
                 {
                     namespaceBlock.WriteDataTypeClass(table);
 
                     namespaceBlock.WriteApiClass(table, databaseOptions, _connectionCreator);
+                });
+            }
+            
+            foreach (var command in nonQueryCommands)
+            {
+                source.WriteNamespaceBlock(command, namespaceBlock =>
+                {
+                    namespaceBlock.WriteNonQueryCommandApiClass(command, odbcOptions);
                 });
             }
 

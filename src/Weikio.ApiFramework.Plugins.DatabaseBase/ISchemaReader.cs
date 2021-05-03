@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Weikio.ApiFramework.Plugins.DatabaseBase
 {
-    public interface ISchemaReader:IDisposable
+    public interface ISchemaReader : IDisposable
     {
         void Connect();
         List<Table> GetTableSchema();

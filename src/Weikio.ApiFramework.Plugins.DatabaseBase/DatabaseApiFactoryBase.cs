@@ -17,31 +17,20 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase
             _loggerFactory = loggerFactory;
         }
 
-        protected List<Type> Generate(DatabaseOptionsBase configuration, Func<DatabaseOptionsBase, ISchemaReader> schemaReaderFactory, Func<DatabaseOptionsBase, IConnectionCreator> connectionCreatorFactory)
+        protected List<Type> Generate(DatabaseOptionsBase configuration, Func<DatabaseOptionsBase, 
+            ISchemaReader> schemaReaderFactory, Func<DatabaseOptionsBase, 
+            IConnectionCreator> connectionCreatorFactory, Func<string, string> sqlColumnSelectFactory)
         {
             try
             {
-                var schema = new List<Table>();
+                using var re = new SchemaReader(configuration, connectionCreatorFactory.Invoke(configuration), sqlColumnSelectFactory,
+                    _loggerFactory.CreateLogger<SchemaReader>());
 
-                using (var schemaReader = schemaReaderFactory(configuration))
-                {
-                    schemaReader.Connect();
-
-                    if (configuration.SqlCommands?.Any() == true)
-                    {
-                        var dbCommands = schemaReader.GetCommandSchema(configuration.SqlCommands);
-                        schema.AddRange(dbCommands);
-                    }
-
-                    if (configuration.ShouldGenerateApisForTables())
-                    {
-                        var dbTables = schemaReader.GetTableSchema();
-                        schema.AddRange(dbTables);
-                    }
-                }
-
+                re.Connect();
+                var schema = re.GetSchema();
+                
                 var generator = new CodeGenerator(connectionCreatorFactory.Invoke(configuration), _loggerFactory.CreateLogger<CodeGenerator>());
-                var assembly = generator.GenerateAssembly(schema, configuration);
+                var assembly = generator.GenerateAssembly(schema.Tables, configuration);
 
                 var result = assembly.GetExportedTypes()
                     .Where(x => x.Name.EndsWith("Api"))

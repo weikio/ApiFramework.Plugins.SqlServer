@@ -214,7 +214,6 @@ namespace Weikio.ApiFramework.Plugins.SqlServer.Schema
                                 }
                             }
 
-
                             sqlServerCommand.Parameters.AddWithValue(parameter.Name, parameterValue);
                         }
                     }
@@ -282,4 +281,6 @@ namespace Weikio.ApiFramework.Plugins.SqlServer.Schema
 
         #endregion
     }
+
+
 }
