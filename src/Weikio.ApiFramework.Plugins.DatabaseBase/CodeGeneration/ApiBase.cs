@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Reflection;
 using Weikio.TypeGenerator.Types;
@@ -10,6 +9,7 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
 {
     public abstract class ApiBase<T> where T : DtoBase, new()
     {
+        private readonly IConnectionCreator _connectionCreator = Cache.ConnectionCreator;
         protected abstract string TableName { get; }
         protected abstract Dictionary<string, string> ColumnMap { get; }
         protected abstract bool IsSqlCommand { get; }
@@ -18,12 +18,12 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
         private static ConcurrentDictionary<string, Type> _cachedTypes = new ConcurrentDictionary<string, Type>();
 
         public DatabaseOptionsBase Configuration { get; set; }
-
+        
         protected async IAsyncEnumerable<object> RunSelect(string select, string filter, string orderby, int? top, int? skip, bool? count)
         {
             var fields = new List<string>();
 
-            using (var conn = new SqlConnection(Configuration.ConnectionString))
+            using (var conn = _connectionCreator.CreateConnection(Configuration))
             {
                 await conn.OpenAsync();
 
@@ -35,14 +35,18 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
 
                     foreach (var prm in queryAndParameters.Parameters)
                     {
+                        var commandParameter = cmd.CreateParameter();
+                        commandParameter.ParameterName = prm.Key;
                         if (prm.Value == null)
                         {
-                            cmd.Parameters.AddWithValue(prm.Key, DBNull.Value);
+                            commandParameter.Value = DBNull.Value;
                         }
                         else
                         {
-                            cmd.Parameters.AddWithValue(prm.Key, prm.Value);
+                            commandParameter.Value = prm.Value;
                         }
+
+                        cmd.Parameters.Add(commandParameter);
                     }
 
                     var selectedColumns = ColumnMap;

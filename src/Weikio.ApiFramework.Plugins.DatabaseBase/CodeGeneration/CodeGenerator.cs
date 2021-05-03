@@ -3,20 +3,31 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Weikio.TypeGenerator;
 
 namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
 {
     public class CodeGenerator
     {
+        private readonly IConnectionCreator _connectionCreator;
+        private readonly ILogger<CodeGenerator> _logger;
+
+        public CodeGenerator(IConnectionCreator connectionCreator, ILogger<CodeGenerator> logger)
+        {
+            _connectionCreator = connectionCreator;
+            _logger = logger;
+        }
+
         public static CodeToAssemblyGenerator CodeToAssemblyGenerator { get; set; }
 
         public Assembly GenerateAssembly(IList<Table> schema, DatabaseOptionsBase databaseOptions)
         {
             CodeToAssemblyGenerator = new CodeToAssemblyGenerator();
-            CodeToAssemblyGenerator.ReferenceAssembly(typeof(System.Console).Assembly);
+            CodeToAssemblyGenerator.ReferenceAssembly(typeof(Console).Assembly);
             CodeToAssemblyGenerator.ReferenceAssembly(typeof(System.Data.DataRow).Assembly);
             CodeToAssemblyGenerator.ReferenceAssemblyContainingType<ProducesResponseTypeAttribute>();
+            CodeToAssemblyGenerator.ReferenceAssembly(_connectionCreator.GetType().Assembly);
             var assemblyCode = GenerateCode(schema, databaseOptions);
 
             try
@@ -28,7 +39,7 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                _logger.LogError(e, "Failed to generate assembly");
 
                 throw;
             }
@@ -50,7 +61,7 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
                 {
                     namespaceBlock.WriteDataTypeClass(table);
 
-                    namespaceBlock.WriteApiClass(table, databaseOptions);
+                    namespaceBlock.WriteApiClass(table, databaseOptions, _connectionCreator);
                 });
             }
 

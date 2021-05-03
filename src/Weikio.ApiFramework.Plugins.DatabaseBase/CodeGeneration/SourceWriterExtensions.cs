@@ -41,8 +41,10 @@ namespace Weikio.ApiFramework.Plugins.DatabaseBase.CodeGeneration
             writer.FinishBlock(); // Finish the class
         }
 
-        public static void WriteApiClass(this StringBuilder writer, Table table, DatabaseOptionsBase odbcOptions)
+        public static void WriteApiClass(this StringBuilder writer, Table table, DatabaseOptionsBase odbcOptions, IConnectionCreator connectionCreator)
         {
+            Cache.ConnectionCreator = connectionCreator;
+            
             if (table.SqlCommand != null)
             {
                 writer.WriteLine($"public class {GetApiClassName(table)} : CommandApiBase<{GetDataTypeName(table)}>");

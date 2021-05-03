@@ -9,20 +9,15 @@ namespace Weikio.ApiFramework.Plugins.SqlServer
 {
     public class ApiFactory : DatabaseApiFactoryBase
     {
-        public ApiFactory(ILogger<DatabaseApiFactoryBase> logger) : base(logger)
+        public ApiFactory(ILogger<ApiFactory> logger, ILoggerFactory loggerFactory) : base(logger, loggerFactory)
         {
         }
 
         public List<Type> Create(SqlServerOptions configuration)
         {
-            var result = Generate(configuration);
+            var result = Generate(configuration, config => new SqlServerSchemaReader(config), config => new SqlServerConnectionCreator(config));
 
             return result;
-        }
-        
-        protected override ISchemaReader CreateSchemaReader(DatabaseOptionsBase configuration)
-        {
-            return new SqlServerSchemaReader(configuration);
         }
     }
 }
