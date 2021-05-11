@@ -1,4 +1,4 @@
-namespace Weikio.ApiFramework.Plugins.SqlServer.Configuration
+namespace Weikio.ApiFramework.Plugins.DatabaseBase
 {
     public class SqlCommandParameter
     {

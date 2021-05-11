@@ -1,44 +1,28 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Weikio.ApiFramework.Plugins.SqlServer.CodeGeneration;
+using Microsoft.Extensions.Logging;
+using SqlKata.Compilers;
 using Weikio.ApiFramework.Plugins.SqlServer.Configuration;
-using Weikio.ApiFramework.Plugins.SqlServer.Schema;
+using Weikio.ApiFramework.SDK.DatabasePlugin;
 
 namespace Weikio.ApiFramework.Plugins.SqlServer
 {
-    public static class ApiFactory
+    public class ApiFactory : DatabaseApiFactoryBase
     {
-        public static Task<IEnumerable<Type>> Create(SqlServerOptions configuration)
+        public ApiFactory(ILogger<ApiFactory> logger, ILoggerFactory loggerFactory) : base(logger, loggerFactory)
         {
-            var schema = new List<Table>();
+        }
 
-            using (var schemaReader = new SchemaReader(configuration))
-            {
-                schemaReader.Connect();
+        public List<Type> Create(SqlServerOptions configuration)
+        {
+            var pluginSettings = new DatabasePluginSettings(config => new SqlServerConnectionCreator(config), 
+                tableName => $"select top 0 * from {tableName}",
+                new SqlServerCompiler() { UseLegacyPagination = false });
 
-                if (configuration.SqlCommands?.Any() == true)
-                {
-                    var dbCommands = schemaReader.GetSchemaFor(configuration.SqlCommands);
-                    schema.AddRange(dbCommands);
-                }
+            pluginSettings.AdditionalReferences.Add(typeof(System.Data.SqlClient.SqlCommand).Assembly);
+            var result = Generate(configuration, pluginSettings);
 
-                if (configuration.ShouldGenerateApisForTables())
-                {
-                    var dbTables = schemaReader.GetSchema();
-                    schema.AddRange(dbTables);
-                }
-            }
-
-            var generator = new CodeGenerator();
-            var assembly = generator.GenerateAssembly(schema, configuration);
-
-            var result = assembly.GetExportedTypes()
-                .Where(x => x.Name.EndsWith("Api"))
-                .ToList();
-
-            return Task.FromResult<IEnumerable<Type>>(result);
+            return result;
         }
     }
 }
