@@ -1,4 +1,4 @@
-using Weikio.ApiFramework.Plugins.DatabaseBase;
+using Weikio.ApiFramework.SDK.DatabasePlugin;
 
 namespace Weikio.ApiFramework.Plugins.SqlServer.Configuration
 {

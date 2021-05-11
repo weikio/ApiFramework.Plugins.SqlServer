@@ -4,10 +4,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Weikio.ApiFramework.AspNetCore;
 using Weikio.ApiFramework.AspNetCore.StarterKit;
-using Weikio.ApiFramework.Plugins.DatabaseBase;
 using Weikio.ApiFramework.Plugins.SqlServer.Configuration;
+using Weikio.ApiFramework.SDK.DatabasePlugin;
 
 namespace Weikio.ApiFramework.Plugins.SqlServer.Sample
 {
@@ -29,20 +28,9 @@ namespace Weikio.ApiFramework.Plugins.SqlServer.Sample
                 .AddSqlServer("/eshop",
                     new SqlServerOptions()
                     {
+                        TrimStrings = false,
                         ConnectionString =
-                            "Server=tcp:adafydevtestdb001.database.windows.net,1433;User ID=docs;Password=3h1@*6PXrldU4F95;Integrated Security=false;Initial Catalog=adafyweikiodevtestdb001;",
-                        SqlCommands = new SqlCommands()
-                        {
-                            {
-                                "test",
-                                new SqlCommand()
-                                {
-                                    CommandText = "SELECT productNumber,name,size from Product WHERE sellStartDate > @param1",
-                                    Parameters = new SqlCommandParameter[] { new SqlCommandParameter() { Name = "param1", Type  = "System.DateTime", DefaultValue = new DateTime(2020,1,1)} },
-                                    DataTypeName = "MyCustom"
-                                }
-                            }
-                        }
+                            "Server=tcp:192.168.1.11,1433;User ID=sa;Password=;Integrated Security=false;Initial Catalog=AdventureWorks2019;"
                     });
         }
 

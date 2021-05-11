@@ -9,8 +9,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{EDF4
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Weikio.ApiFramework.Plugins.SqlServer.Sample", "..\samples\ApiFramework.Plugins.SqlServer.Sample\Weikio.ApiFramework.Plugins.SqlServer.Sample.csproj", "{BB8E6C67-4C10-4744-83AD-6BE0177D5CF7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Weikio.ApiFramework.Plugins.DatabaseBase", "Weikio.ApiFramework.Plugins.DatabaseBase\Weikio.ApiFramework.Plugins.DatabaseBase.csproj", "{E63C7F74-FC77-4369-B34A-BB95DF07059B}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,10 +23,6 @@ Global
 		{BB8E6C67-4C10-4744-83AD-6BE0177D5CF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BB8E6C67-4C10-4744-83AD-6BE0177D5CF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BB8E6C67-4C10-4744-83AD-6BE0177D5CF7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E63C7F74-FC77-4369-B34A-BB95DF07059B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E63C7F74-FC77-4369-B34A-BB95DF07059B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E63C7F74-FC77-4369-B34A-BB95DF07059B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E63C7F74-FC77-4369-B34A-BB95DF07059B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

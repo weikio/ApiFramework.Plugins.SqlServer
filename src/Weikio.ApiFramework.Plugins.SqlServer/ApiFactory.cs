@@ -2,9 +2,8 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using SqlKata.Compilers;
-using Weikio.ApiFramework.Plugins.DatabaseBase;
 using Weikio.ApiFramework.Plugins.SqlServer.Configuration;
-using Weikio.ApiFramework.Plugins.SqlServer.Schema;
+using Weikio.ApiFramework.SDK.DatabasePlugin;
 
 namespace Weikio.ApiFramework.Plugins.SqlServer
 {
@@ -16,13 +15,12 @@ namespace Weikio.ApiFramework.Plugins.SqlServer
 
         public List<Type> Create(SqlServerOptions configuration)
         {
-            var result = Generate(configuration, 
-                config => new SqlServerConnectionCreator(config),
-                tableName => $"select * from {tableName}",
-                new SqlServerCompiler()
-                {
-                    UseLegacyPagination = false
-                });
+            var pluginSettings = new DatabasePluginSettings(config => new SqlServerConnectionCreator(config), 
+                tableName => $"select top 0 * from {tableName}",
+                new SqlServerCompiler() { UseLegacyPagination = false });
+
+            pluginSettings.AdditionalReferences.Add(typeof(System.Data.SqlClient.SqlCommand).Assembly);
+            var result = Generate(configuration, pluginSettings);
 
             return result;
         }
