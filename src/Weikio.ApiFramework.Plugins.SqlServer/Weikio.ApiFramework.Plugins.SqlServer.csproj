@@ -23,7 +23,7 @@
 
   <ItemGroup>
     <PackageReference Include="MinVer" Version="2.0.0" PrivateAssets="all" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.7.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.2" />
     <PackageReference Include="Weikio.ApiFramework.SDK" Version="1.0.0-alpha.0.82" />
     <PackageReference Include="Weikio.TypeGenerator" Version="1.3.3" />
     <PackageReference Include="Weikio.ApiFramework.SDK.DatabasePlugin" Version="1.0.0-alpha.0.3" />
