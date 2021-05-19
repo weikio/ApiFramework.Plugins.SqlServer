@@ -1,5 +1,5 @@
 ﻿using System.Data.Common;
-using Microsoft.Data.SqlClient;
+using System.Data.SqlClient;
 using Weikio.ApiFramework.SDK.DatabasePlugin;
 
 namespace Weikio.ApiFramework.Plugins.SqlServer
