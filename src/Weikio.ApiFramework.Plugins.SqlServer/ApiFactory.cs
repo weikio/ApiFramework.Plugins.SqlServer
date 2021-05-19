@@ -19,7 +19,6 @@ namespace Weikio.ApiFramework.Plugins.SqlServer
                 tableName => $"select top 0 * from {tableName}",
                 new SqlServerCompiler() { UseLegacyPagination = false });
 
-            pluginSettings.AdditionalReferences.Add(typeof(System.Data.SqlClient.SqlCommand).Assembly);
             var result = Generate(configuration, pluginSettings);
 
             return result;
