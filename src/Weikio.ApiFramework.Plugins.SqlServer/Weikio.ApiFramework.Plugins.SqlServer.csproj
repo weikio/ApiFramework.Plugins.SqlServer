@@ -8,7 +8,8 @@
     <Company>Weik.io</Company>
     <Description>Sql Server plugin for API Framework.</Description>
     <PackageDescription>Sql Server plugin for API Framework.</PackageDescription>
-    <PackageProjectUrl>https://weik.io</PackageProjectUrl>
+    <PackageProjectUrl>https://weik.io/apiframework</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/weikio/ApiFramework.Plugins.SqlServer</RepositoryUrl>
     <Copyright>©2021 Weik.io</Copyright>
     <PackageId>Weikio.ApiFramework.Plugins.SqlServer</PackageId>
     <Product>Weikio.ApiFramework.Plugins.SqlServer</Product>
@@ -24,7 +25,7 @@
   <ItemGroup>
     <PackageReference Include="MinVer" Version="2.0.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="2.1.2"/>
-    <PackageReference Include="Weikio.ApiFramework.SDK.DatabasePlugin" Version="1.0.0-alpha.0.5" />
+    <PackageReference Include="Weikio.ApiFramework.SDK.DatabasePlugin" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>
