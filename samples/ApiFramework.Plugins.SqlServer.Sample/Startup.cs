@@ -1,12 +1,9 @@
-using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Weikio.ApiFramework.AspNetCore.StarterKit;
 using Weikio.ApiFramework.Plugins.SqlServer.Configuration;
-using Weikio.ApiFramework.SDK.DatabasePlugin;
 
 namespace Weikio.ApiFramework.Plugins.SqlServer.Sample
 {
@@ -28,9 +25,9 @@ namespace Weikio.ApiFramework.Plugins.SqlServer.Sample
                 .AddSqlServer("/eshop",
                     new SqlServerOptions()
                     {
-                        TrimStrings = false,
+                        // This provides a read only access to the db used in the documentations
                         ConnectionString =
-                            "Server=tcp:192.168.1.11,1433;User ID=sa;Password=;Integrated Security=false;Initial Catalog=AdventureWorks2019;"
+                            "Server=tcp:adafydevtestdb001.database.windows.net,1433;User ID=docs;Password=3h1@*6PXrldU4F95;Integrated Security=false;Initial Catalog=adafyweikiodevtestdb001;"
                     });
         }
 
