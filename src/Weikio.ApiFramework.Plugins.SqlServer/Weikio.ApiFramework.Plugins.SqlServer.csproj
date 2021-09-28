@@ -25,7 +25,7 @@
   <ItemGroup>
     <PackageReference Include="MinVer" Version="2.0.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="2.1.2"/>
-    <PackageReference Include="Weikio.ApiFramework.SDK.DatabasePlugin" Version="1.0.0" />
+    <PackageReference Include="Weikio.ApiFramework.SDK.DatabasePlugin" Version="1.0.1-alpha.0.3" />
   </ItemGroup>
 
   <ItemGroup>
