@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
-using SqlKata.Compilers;
 using Weikio.ApiFramework.Plugins.SqlServer.Configuration;
 using Weikio.ApiFramework.SDK.DatabasePlugin;
 
@@ -15,10 +14,8 @@ namespace Weikio.ApiFramework.Plugins.SqlServer
 
         public List<Type> Create(SqlServerOptions configuration)
         {
-            var pluginSettings = new DatabasePluginSettings(config => new SqlServerConnectionCreator(config), 
-                tableName => $"select top 0 * from {tableName}",
-                new SqlServerCompiler() { UseLegacyPagination = false });
-
+            var pluginSettings = new DatabasePluginSettings(tableName => $"select top 0 * from {tableName}");
+            
             var result = Generate(configuration, pluginSettings);
 
             return result;
